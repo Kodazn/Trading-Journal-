@@ -142,7 +142,8 @@ export default function Journal() {
   const netPnL = allT.reduce((s,t) => s+(parseFloat(t.pnl)||0), 0);
   const ftmoPnL= ftmoTrades.reduce((s,t)=>s+(parseFloat(t.pnl)||0),0);
   const winRate= allT.length ? ((wins/allT.length)*100).toFixed(1) : "0.0";
-  const avgRR  = allT.length ? (allT.reduce((s,t)=>s+(parseFloat(t.rr)||0),0)/allT.length).toFixed(2) : "0.00";
+  const rrTrades = allT.filter(t => parseFloat(t.rr) > 0);
+  const avgRR  = rrTrades.length ? (rrTrades.reduce((s,t)=>s+parseFloat(t.rr),0)/rrTrades.length).toFixed(2) : "0.00";
   const streak = (() => { let s=0; for(const t of trades){ if(t.result==="WIN") s++; else break; } return s; })();
   const mistakeCounts = trades.reduce((a,t) => { if(t.mistake&&t.mistake!=="None") a[t.mistake]=(a[t.mistake]||0)+1; return a; }, {});
   const topMistake = Object.entries(mistakeCounts).sort((a,b)=>b[1]-a[1])[0];
