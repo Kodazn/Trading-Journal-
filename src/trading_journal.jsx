@@ -146,7 +146,7 @@ export default function Journal() {
   const streak = (() => { let s=0; for(const t of trades){ if(t.result==="WIN") s++; else break; } return s; })();
   const mistakeCounts = trades.reduce((a,t) => { if(t.mistake&&t.mistake!=="None") a[t.mistake]=(a[t.mistake]||0)+1; return a; }, {});
   const topMistake = Object.entries(mistakeCounts).sort((a,b)=>b[1]-a[1])[0];
-  const BASE_BALANCE = 10000;
+  const BASE_BALANCE = 9402.19;
   const ftmoBalance = BASE_BALANCE + ftmoPnL;
 
   // Calendar
