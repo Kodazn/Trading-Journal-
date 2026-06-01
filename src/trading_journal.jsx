@@ -1,55 +1,47 @@
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
-// ── Persistent storage helpers (Firestore) ───────────────────
-async function load(key) {
-  try {
-    const snap = await getDoc(doc(db, "journal", key));
-    return snap.exists() ? snap.data().value : null;
-  } catch { return null; }
-}
+// ── Firestore save helper ─────────────────────────────────────
 async function save(key, val) {
-  try {
-    await setDoc(doc(db, "journal", key), { value: val });
-  } catch {}
+  try { await setDoc(doc(db, "journal", key), { value: val }); } catch {}
 }
 
 // ── Pre-seeded trade history ─────────────────────────────────
 const SEED_TRADES = [
-  { id:1, date:"2025-12-10", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.16128", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-99.59,  mistake:"None", notes:"", step_failed:"" },
-  { id:2, date:"2025-12-10", pair:"GBPUSD", session:"New York", bias:"BEAR", entry:"1.33026", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-44.13,  mistake:"None", notes:"", step_failed:"" },
-  { id:3, date:"2025-12-23", pair:"GBPUSD", session:"London",   bias:"BULL", entry:"1.34779", sl:"", tp:"", rr:"", result:"WIN",       pnl:109.76,  mistake:"None", notes:"", step_failed:"" },
-  { id:4, date:"2025-12-26", pair:"GBPUSD", session:"London",   bias:"BEAR", entry:"1.35037", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-78.19,  mistake:"None", notes:"", step_failed:"" },
-  { id:5, date:"2025-12-29", pair:"EURUSD", session:"New York", bias:"BULL", entry:"1.17643", sl:"", tp:"", rr:"", result:"WIN",       pnl:18.79,   mistake:"None", notes:"", step_failed:"" },
-  { id:6, date:"2025-12-30", pair:"EURUSD", session:"New York", bias:"BULL", entry:"1.17699", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-51.61,  mistake:"None", notes:"", step_failed:"" },
-  { id:7, date:"2026-01-27", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.18957", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-160.79, mistake:"None", notes:"", step_failed:"" },
-  { id:8, date:"2026-03-02", pair:"GBPUSD", session:"London",   bias:"BULL", entry:"1.35693", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-233.56, mistake:"None", notes:"", step_failed:"" },
-  { id:9, date:"2026-03-17", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.15036", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-61.18,  mistake:"None", notes:"", step_failed:"" },
-  { id:10,date:"2026-04-17", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.17826", sl:"", tp:"", rr:"", result:"WIN",       pnl:84.17,   mistake:"None", notes:"Trade 1 FTMO challenge", step_failed:"" },
-  { id:11,date:"2026-04-20", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.17674", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-50.53,  mistake:"None", notes:"Trade 2 FTMO challenge", step_failed:"" },
-  { id:12,date:"2026-04-23", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.17054", sl:"", tp:"", rr:"", result:"WIN",       pnl:73.16,   mistake:"None", notes:"Trade 3 FTMO challenge", step_failed:"" },
-  { id:13,date:"2026-04-27", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17138", sl:"", tp:"", rr:"", result:"WIN",       pnl:24.97,   mistake:"None", notes:"Trade 4 FTMO challenge", step_failed:"" },
-  { id:14,date:"2026-04-28", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17319", sl:"", tp:"", rr:"", result:"WIN",       pnl:95.21,   mistake:"None", notes:"Trade 5 FTMO challenge", step_failed:"" },
-  { id:15,date:"2026-04-29", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17104", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-48.51,  mistake:"SL too close to liquidity", notes:"Trade 6 FTMO — SL stopped then price ran to TP", step_failed:"SL placement" },
-  { id:16,date:"2026-05-05", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.16888", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-46.94,  mistake:"None", notes:"Trade 7 FTMO challenge", step_failed:"" },
-  { id:17,date:"2026-05-08", pair:"XAUUSD", session:"London",   bias:"BULL", entry:"4704.91", sl:"", tp:"", rr:"", result:"BREAKEVEN", pnl:0.07,    mistake:"None", notes:"Trade 8 FTMO — Gold test", step_failed:"" },
-  { id:18,date:"2026-05-11", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17749", sl:"", tp:"", rr:"", result:"WIN",       pnl:94.33,   mistake:"None", notes:"Trade 9 FTMO challenge", step_failed:"" },
-  { id:19,date:"2026-05-12", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17851", sl:"", tp:"", rr:"", result:"WIN",       pnl:123.46,  mistake:"None", notes:"Trade 10 FTMO challenge", step_failed:"" },
-  { id:20,date:"2026-05-15", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.17116", sl:"", tp:"", rr:"", result:"WIN",       pnl:71.99,   mistake:"None", notes:"Trade 11 FTMO — partial close", step_failed:"" },
-  { id:21,date:"2026-05-18", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.16448", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-53.58,  mistake:"None", notes:"", step_failed:"" },
-  { id:22,date:"2026-05-19", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.16333", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-55.66,  mistake:"None", notes:"", step_failed:"" },
-  { id:23,date:"2026-05-20", pair:"XAUUSD", session:"New York", bias:"BULL", entry:"4531.59", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-4.17,   mistake:"None", notes:"", step_failed:"" },
-  { id:24,date:"2026-05-20", pair:"XAUUSD", session:"New York", bias:"BULL", entry:"4536.03", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-14.13,  mistake:"None", notes:"", step_failed:"" },
-  { id:25,date:"2026-05-21", pair:"XAUUSD", session:"London",   bias:"BULL", entry:"4532.68", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-54.18,  mistake:"None", notes:"", step_failed:"" },
-  { id:26,date:"2026-05-22", pair:"XAUUSD", session:"London",   bias:"BEAR", entry:"4534.59", sl:"", tp:"", rr:"", result:"WIN",       pnl:11.74,   mistake:"None", notes:"", step_failed:"" },
-  { id:27,date:"2026-05-22", pair:"EURUSD", session:"New York", bias:"BULL", entry:"1.15965", sl:"", tp:"", rr:"", result:"WIN",       pnl:92.93,   mistake:"None", notes:"", step_failed:"" },
-  { id:28,date:"2026-05-25", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4573.31", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-70.05,  mistake:"None", notes:"", step_failed:"" },
-  { id:29,date:"2026-05-25", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4571.12", sl:"", tp:"", rr:"", result:"WIN",       pnl:90.93,   mistake:"None", notes:"", step_failed:"" },
-  { id:30,date:"2026-05-26", pair:"XAUUSD", session:"London",   bias:"BULL", entry:"4519.39", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-49.52,  mistake:"None", notes:"", step_failed:"" },
-  { id:31,date:"2026-05-28", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.16333", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-57.18,  mistake:"None", notes:"", step_failed:"" },
-  { id:32,date:"2026-05-28", pair:"XAUUSD", session:"London",   bias:"BEAR", entry:"4395.37", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-61.62,  mistake:"None", notes:"", step_failed:"" },
-  { id:33,date:"2026-05-28", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4468.14", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-69.52,  mistake:"None", notes:"", step_failed:"" },
+  { id:1,  date:"2025-12-10", pair:"EURUSD", session:"New York",          bias:"BEAR", entry:"1.16128", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-99.59,  mistake:"None", notes:"", step_failed:"" },
+  { id:2,  date:"2025-12-10", pair:"GBPUSD", session:"New York",          bias:"BEAR", entry:"1.33026", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-44.13,  mistake:"None", notes:"", step_failed:"" },
+  { id:3,  date:"2025-12-23", pair:"GBPUSD", session:"London",            bias:"BULL", entry:"1.34779", sl:"", tp:"", rr:"", result:"WIN",       pnl:109.76,  mistake:"None", notes:"", step_failed:"" },
+  { id:4,  date:"2025-12-26", pair:"GBPUSD", session:"London",            bias:"BEAR", entry:"1.35037", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-78.19,  mistake:"None", notes:"", step_failed:"" },
+  { id:5,  date:"2025-12-29", pair:"EURUSD", session:"New York",          bias:"BULL", entry:"1.17643", sl:"", tp:"", rr:"", result:"WIN",       pnl:18.79,   mistake:"None", notes:"", step_failed:"" },
+  { id:6,  date:"2025-12-30", pair:"EURUSD", session:"New York",          bias:"BULL", entry:"1.17699", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-51.61,  mistake:"None", notes:"", step_failed:"" },
+  { id:7,  date:"2026-01-27", pair:"EURUSD", session:"London",            bias:"BEAR", entry:"1.18957", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-160.79, mistake:"None", notes:"", step_failed:"" },
+  { id:8,  date:"2026-03-02", pair:"GBPUSD", session:"London",            bias:"BULL", entry:"1.35693", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-233.56, mistake:"None", notes:"", step_failed:"" },
+  { id:9,  date:"2026-03-17", pair:"EURUSD", session:"New York",          bias:"BEAR", entry:"1.15036", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-61.18,  mistake:"None", notes:"", step_failed:"" },
+  { id:10, date:"2026-04-17", pair:"EURUSD", session:"London",            bias:"BULL", entry:"1.17826", sl:"", tp:"", rr:"", result:"WIN",       pnl:84.17,   mistake:"None", notes:"Trade 1 FTMO challenge", step_failed:"" },
+  { id:11, date:"2026-04-20", pair:"EURUSD", session:"New York",          bias:"BEAR", entry:"1.17674", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-50.53,  mistake:"None", notes:"Trade 2 FTMO challenge", step_failed:"" },
+  { id:12, date:"2026-04-23", pair:"EURUSD", session:"New York",          bias:"BEAR", entry:"1.17054", sl:"", tp:"", rr:"", result:"WIN",       pnl:73.16,   mistake:"None", notes:"Trade 3 FTMO challenge", step_failed:"" },
+  { id:13, date:"2026-04-27", pair:"EURUSD", session:"London",            bias:"BEAR", entry:"1.17138", sl:"", tp:"", rr:"", result:"WIN",       pnl:24.97,   mistake:"None", notes:"Trade 4 FTMO challenge", step_failed:"" },
+  { id:14, date:"2026-04-28", pair:"EURUSD", session:"London",            bias:"BEAR", entry:"1.17319", sl:"", tp:"", rr:"", result:"WIN",       pnl:95.21,   mistake:"None", notes:"Trade 5 FTMO challenge", step_failed:"" },
+  { id:15, date:"2026-04-29", pair:"EURUSD", session:"London",            bias:"BEAR", entry:"1.17104", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-48.51,  mistake:"SL too close to liquidity", notes:"Trade 6 FTMO — SL stopped then price ran to TP", step_failed:"SL placement" },
+  { id:16, date:"2026-05-05", pair:"EURUSD", session:"New York",          bias:"BEAR", entry:"1.16888", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-46.94,  mistake:"None", notes:"Trade 7 FTMO challenge", step_failed:"" },
+  { id:17, date:"2026-05-08", pair:"XAUUSD", session:"London",            bias:"BULL", entry:"4704.91", sl:"", tp:"", rr:"", result:"BREAKEVEN", pnl:0.07,    mistake:"None", notes:"Trade 8 FTMO — Gold test", step_failed:"" },
+  { id:18, date:"2026-05-11", pair:"EURUSD", session:"London",            bias:"BEAR", entry:"1.17749", sl:"", tp:"", rr:"", result:"WIN",       pnl:94.33,   mistake:"None", notes:"Trade 9 FTMO challenge", step_failed:"" },
+  { id:19, date:"2026-05-12", pair:"EURUSD", session:"London",            bias:"BEAR", entry:"1.17851", sl:"", tp:"", rr:"", result:"WIN",       pnl:123.46,  mistake:"None", notes:"Trade 10 FTMO challenge", step_failed:"" },
+  { id:20, date:"2026-05-15", pair:"EURUSD", session:"New York",          bias:"BEAR", entry:"1.17116", sl:"", tp:"", rr:"", result:"WIN",       pnl:71.99,   mistake:"None", notes:"Trade 11 FTMO — partial close", step_failed:"" },
+  { id:21, date:"2026-05-18", pair:"EURUSD", session:"London",            bias:"BEAR", entry:"1.16448", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-53.58,  mistake:"None", notes:"", step_failed:"" },
+  { id:22, date:"2026-05-19", pair:"EURUSD", session:"London",            bias:"BULL", entry:"1.16333", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-55.66,  mistake:"None", notes:"", step_failed:"" },
+  { id:23, date:"2026-05-20", pair:"XAUUSD", session:"New York",          bias:"BULL", entry:"4531.59", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-4.17,   mistake:"None", notes:"", step_failed:"" },
+  { id:24, date:"2026-05-20", pair:"XAUUSD", session:"New York",          bias:"BULL", entry:"4536.03", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-14.13,  mistake:"None", notes:"", step_failed:"" },
+  { id:25, date:"2026-05-21", pair:"XAUUSD", session:"London",            bias:"BULL", entry:"4532.68", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-54.18,  mistake:"None", notes:"", step_failed:"" },
+  { id:26, date:"2026-05-22", pair:"XAUUSD", session:"London",            bias:"BEAR", entry:"4534.59", sl:"", tp:"", rr:"", result:"WIN",       pnl:11.74,   mistake:"None", notes:"", step_failed:"" },
+  { id:27, date:"2026-05-22", pair:"EURUSD", session:"New York",          bias:"BULL", entry:"1.15965", sl:"", tp:"", rr:"", result:"WIN",       pnl:92.93,   mistake:"None", notes:"", step_failed:"" },
+  { id:28, date:"2026-05-25", pair:"XAUUSD", session:"New York",          bias:"BEAR", entry:"4573.31", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-70.05,  mistake:"None", notes:"", step_failed:"" },
+  { id:29, date:"2026-05-25", pair:"XAUUSD", session:"New York",          bias:"BEAR", entry:"4571.12", sl:"", tp:"", rr:"", result:"WIN",       pnl:90.93,   mistake:"None", notes:"", step_failed:"" },
+  { id:30, date:"2026-05-26", pair:"XAUUSD", session:"London",            bias:"BULL", entry:"4519.39", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-49.52,  mistake:"None", notes:"", step_failed:"" },
+  { id:31, date:"2026-05-28", pair:"EURUSD", session:"London",            bias:"BULL", entry:"1.16333", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-57.18,  mistake:"None", notes:"", step_failed:"" },
+  { id:32, date:"2026-05-28", pair:"XAUUSD", session:"London",            bias:"BEAR", entry:"4395.37", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-61.62,  mistake:"None", notes:"", step_failed:"" },
+  { id:33, date:"2026-05-28", pair:"XAUUSD", session:"New York",          bias:"BEAR", entry:"4468.14", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-69.52,  mistake:"None", notes:"", step_failed:"" },
 ].reverse();
 
 const PAIRS    = ["EURUSD","XAUUSD","GBPUSD","Other"];
@@ -57,10 +49,8 @@ const SESSIONS = ["London","New York","London/NY Overlap","Asian"];
 const RESULTS  = ["WIN","LOSS","BREAKEVEN"];
 const MISTAKES = ["None","Entered before confirmation","Emotional bias","SL too close to liquidity","Overconfidence in setup","Traded outside session","Ignored news event","Both pairs simultaneously"];
 const MONTHS   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
-const EMPTY = { id:null, date:"", pair:"EURUSD", session:"London", bias:"BULL", entry:"", sl:"", tp:"", rr:"", result:"WIN", pnl:"", mistake:"None", notes:"", step_failed:"" };
-
-const C = { bg:"#0a0a0f", card:"#0f0f1a", border:"#1a1a2e", accent:"#00c896", red:"#ff4466", orange:"#ffaa00", muted:"#444466", text:"#e0e0f0", dim:"#1c1c2e" };
+const EMPTY    = { id:null, date:"", pair:"EURUSD", session:"London", bias:"BULL", entry:"", sl:"", tp:"", rr:"", result:"WIN", pnl:"", mistake:"None", notes:"", step_failed:"" };
+const C        = { bg:"#0a0a0f", card:"#0f0f1a", border:"#1a1a2e", accent:"#00c896", red:"#ff4466", orange:"#ffaa00", muted:"#444466", text:"#e0e0f0", dim:"#1c1c2e" };
 
 const css = `
 * { box-sizing:border-box; margin:0; padding:0; }
@@ -87,6 +77,38 @@ function SectionTitle({ children }) {
   return <div style={{ fontSize:11, color:C.muted, fontWeight:700, letterSpacing:"0.1em", marginBottom:12 }}>{children}</div>;
 }
 
+function PnLChart({ trades }) {
+  const sorted = [...trades].sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id||0)-(b.id||0));
+  if (sorted.length < 2) return <div style={{ color:C.muted, textAlign:"center", padding:16, fontSize:12 }}>Log more trades to see the chart.</div>;
+
+  let cum = 0;
+  const pts = sorted.map(t => { cum += parseFloat(t.pnl)||0; return cum; });
+  const minV = Math.min(0, ...pts), maxV = Math.max(0, ...pts);
+  const range = maxV - minV || 1;
+  const W = 100, H = 30, pad = 2;
+  const px = i => pad + (i / (pts.length - 1)) * (W - pad*2);
+  const py = v => H - pad - ((v - minV) / range) * (H - pad*2);
+  const z = py(0);
+  const line = pts.map((v,i) => `${i===0?"M":"L"}${px(i).toFixed(2)},${py(v).toFixed(2)}`).join(" ");
+  const fill = `${line} L${px(pts.length-1).toFixed(2)},${z.toFixed(2)} L${px(0).toFixed(2)},${z.toFixed(2)} Z`;
+  const last = pts[pts.length-1];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:90 }} preserveAspectRatio="none">
+      <defs>
+        <clipPath id="ca"><rect x={0} y={0} width={W} height={z} /></clipPath>
+        <clipPath id="cb"><rect x={0} y={z} width={W} height={H} /></clipPath>
+      </defs>
+      <line x1={pad} y1={z} x2={W-pad} y2={z} stroke={C.border} strokeWidth={0.5} />
+      <path d={fill} fill={C.accent} opacity="0.15" clipPath="url(#ca)" />
+      <path d={fill} fill={C.red}    opacity="0.15" clipPath="url(#cb)" />
+      <path d={line} fill="none" stroke={C.accent} strokeWidth="1" clipPath="url(#ca)" />
+      <path d={line} fill="none" stroke={C.red}    strokeWidth="1" clipPath="url(#cb)" />
+      <circle cx={px(pts.length-1)} cy={py(last)} r="1.5" fill={last>=0?C.accent:C.red} />
+    </svg>
+  );
+}
+
 function calcRR(f) {
   const e=parseFloat(f.entry), s=parseFloat(f.sl), t=parseFloat(f.tp);
   if (!e||!s||!t) return "";
@@ -96,61 +118,124 @@ function calcRR(f) {
 function fmt(n) { return n>=0 ? `+£${Math.abs(n).toFixed(2)}` : `-£${Math.abs(n).toFixed(2)}`; }
 function resultColor(r) { return r==="WIN" ? C.accent : r==="LOSS" ? C.red : C.orange; }
 
+const BASE_BALANCE  = 9275.05;
+const FTMO_TARGET   = 11000;
+const FTMO_FLOOR    = 9000;
+const FTMO_START    = "2026-04-16";
+
 export default function Journal() {
-  const [tab,     setTab]     = useState("dashboard");
-  const [trades,  setTrades]  = useState([]);
-  const [notes,   setNotes]   = useState({});
-  const [form,    setForm]    = useState(EMPTY);
-  const [editing, setEditing] = useState(false);
-  const [loaded,  setLoaded]  = useState(false);
-  const [calDate, setCalDate] = useState(new Date());
-  const [selDay,  setSelDay]  = useState(null);
-  const [filter,  setFilter]  = useState("ALL");
+  const [tab,       setTab]       = useState("dashboard");
+  const [trades,    setTrades]    = useState([]);
+  const [notes,     setNotes]     = useState({});
+  const [form,      setForm]      = useState(EMPTY);
+  const [editing,   setEditing]   = useState(false);
+  const [loaded,    setLoaded]    = useState(false);
+  const [calDate,   setCalDate]   = useState(new Date());
+  const [selDay,    setSelDay]    = useState(null);
+  const [filter,    setFilter]    = useState("ALL");
+  const [filterFrom,setFilterFrom]= useState("");
+  const [filterTo,  setFilterTo]  = useState("");
 
+  // ── Real-time Firestore sync ──────────────────────────────
   useEffect(() => {
-    (async () => {
-      const t = await load("tj_trades2");
-      const n = await load("tj_notes2");
-      if (t && t.length > 0) setTrades(t);
-      else { setTrades(SEED_TRADES); await save("tj_trades2", SEED_TRADES); }
-      if (n) setNotes(n);
+    const unsubTrades = onSnapshot(doc(db, "journal", "tj_trades2"), snap => {
+      const val = snap.exists() ? snap.data().value : null;
+      if (val && val.length > 0) setTrades(val);
+      else { setTrades(SEED_TRADES); save("tj_trades2", SEED_TRADES); }
       setLoaded(true);
-    })();
+    });
+    const unsubNotes = onSnapshot(doc(db, "journal", "tj_notes2"), snap => {
+      if (snap.exists() && snap.data().value) setNotes(snap.data().value);
+    });
+    return () => { unsubTrades(); unsubNotes(); };
   }, []);
-
-  useEffect(() => { if (loaded) save("tj_trades2", trades); }, [trades, loaded]);
-  useEffect(() => { if (loaded) save("tj_notes2",  notes);  }, [notes,  loaded]);
 
   function submitTrade() {
     if (!form.date) return;
     const t = { ...form, id: editing ? form.id : Date.now(), rr: form.rr || calcRR(form), pnl: parseFloat(form.pnl)||0 };
-    if (editing) { setTrades(p => p.map(x => x.id===t.id ? t : x)); setEditing(false); }
-    else setTrades(p => [t, ...p]);
+    const next = editing ? trades.map(x => x.id===t.id ? t : x) : [t, ...trades];
+    setTrades(next);
+    save("tj_trades2", next);
+    if (editing) setEditing(false);
     setForm(EMPTY);
     setTab("history");
   }
-  function deleteTrade(id) { if (confirm("Delete this trade?")) setTrades(p => p.filter(t => t.id!==id)); }
-  function editTrade(t) { setForm({...t, pnl: t.pnl?.toString()||""}); setEditing(true); setTab("log"); window.scrollTo(0,0); }
+  function deleteTrade(id) {
+    if (!confirm("Delete this trade?")) return;
+    const next = trades.filter(t => t.id !== id);
+    setTrades(next);
+    save("tj_trades2", next);
+  }
+  function editTrade(t) { setForm({...t, pnl:t.pnl?.toString()||""}); setEditing(true); setTab("log"); window.scrollTo(0,0); }
   function uf(k,v) { setForm(p => { const n={...p,[k]:v}; if(["entry","sl","tp"].includes(k)) n.rr=calcRR(n); return n; }); }
 
-  // Stats
-  const ftmoTrades = trades.filter(t => new Date(t.date) >= new Date("2026-04-16"));
-  const allT   = trades;
-  const wins   = allT.filter(t=>t.result==="WIN").length;
-  const losses = allT.filter(t=>t.result==="LOSS").length;
-  const bes    = allT.filter(t=>t.result==="BREAKEVEN").length;
-  const netPnL = allT.reduce((s,t) => s+(parseFloat(t.pnl)||0), 0);
-  const ftmoPnL= ftmoTrades.reduce((s,t)=>s+(parseFloat(t.pnl)||0),0);
-  const winRate= allT.length ? ((wins/allT.length)*100).toFixed(1) : "0.0";
-  const rrTrades = allT.filter(t => parseFloat(t.rr) > 0);
-  const avgRR  = rrTrades.length ? (rrTrades.reduce((s,t)=>s+parseFloat(t.rr),0)/rrTrades.length).toFixed(2) : "0.00";
-  const streak = (() => { let s=0; for(const t of trades){ if(t.result==="WIN") s++; else break; } return s; })();
-  const mistakeCounts = trades.reduce((a,t) => { if(t.mistake&&t.mistake!=="None") a[t.mistake]=(a[t.mistake]||0)+1; return a; }, {});
-  const topMistake = Object.entries(mistakeCounts).sort((a,b)=>b[1]-a[1])[0];
-  const BASE_BALANCE = 9275.05;
-  const ftmoBalance = BASE_BALANCE + ftmoPnL;
+  function exportCSV() {
+    const headers = ["Date","Pair","Session","Bias","Entry","SL","TP","RR","Result","P&L","Mistake","Step Failed","Notes"];
+    const rows = [...trades].sort((a,b)=>a.date<b.date?-1:1).map(t => [
+      t.date, t.pair, t.session, t.bias, t.entry||"", t.sl||"", t.tp||"", t.rr||"",
+      t.result, t.pnl, t.mistake||"", t.step_failed||"",
+      `"${(t.notes||"").replace(/"/g,'""')}"`
+    ]);
+    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob(["﻿"+csv], { type:"text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href=url; a.download="trades.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }
 
-  // Calendar
+  // ── Stats ─────────────────────────────────────────────────
+  const ftmoTrades  = trades.filter(t => t.date >= FTMO_START);
+  const allT        = trades;
+  const wins        = allT.filter(t=>t.result==="WIN").length;
+  const losses      = allT.filter(t=>t.result==="LOSS").length;
+  const bes         = allT.filter(t=>t.result==="BREAKEVEN").length;
+  const netPnL      = allT.reduce((s,t)=>s+(parseFloat(t.pnl)||0),0);
+  const ftmoPnL     = ftmoTrades.reduce((s,t)=>s+(parseFloat(t.pnl)||0),0);
+  const winRate     = allT.length ? ((wins/allT.length)*100).toFixed(1) : "0.0";
+  const rrTrades    = allT.filter(t=>parseFloat(t.rr)>0);
+  const avgRR       = rrTrades.length ? (rrTrades.reduce((s,t)=>s+parseFloat(t.rr),0)/rrTrades.length).toFixed(2) : "0.00";
+  const streak      = (() => { let s=0; for(const t of trades){ if(t.result==="WIN") s++; else break; } return s; })();
+  const mistakeCounts = trades.reduce((a,t)=>{ if(t.mistake&&t.mistake!=="None") a[t.mistake]=(a[t.mistake]||0)+1; return a; },{});
+  const topMistake  = Object.entries(mistakeCounts).sort((a,b)=>b[1]-a[1])[0];
+
+  // FTMO
+  const ftmoBalance  = BASE_BALANCE + ftmoPnL;
+  const ftmoProgress = Math.min(100, Math.max(0, ((ftmoBalance - BASE_BALANCE) / (FTMO_TARGET - BASE_BALANCE)) * 100));
+  const ftmoWins     = ftmoTrades.filter(t=>t.result==="WIN").length;
+  const ftmoWinRate  = ftmoTrades.length ? ((ftmoWins/ftmoTrades.length)*100).toFixed(1) : "0.0";
+  const motivMsg     = ftmoProgress < 20 ? "Just getting started" :
+                       ftmoProgress < 40 ? "Building momentum" :
+                       ftmoProgress < 60 ? "Getting close" :
+                       ftmoProgress < 80 ? "Almost there" : "🎯 Target in sight";
+
+  // Risk management
+  const winPnLs    = allT.filter(t=>t.result==="WIN").map(t=>parseFloat(t.pnl)||0);
+  const lossPnLs   = allT.filter(t=>t.result==="LOSS").map(t=>parseFloat(t.pnl)||0);
+  const bestWin    = winPnLs.length  ? Math.max(...winPnLs)  : 0;
+  const maxLoss    = lossPnLs.length ? Math.min(...lossPnLs) : 0;
+  const avgWin     = winPnLs.length  ? winPnLs.reduce((s,v)=>s+v,0)/winPnLs.length   : 0;
+  const avgLoss    = lossPnLs.length ? Math.abs(lossPnLs.reduce((s,v)=>s+v,0)/lossPnLs.length) : 0;
+  const wlRatio    = avgLoss > 0 ? (avgWin/avgLoss).toFixed(2) : "N/A";
+
+  // Session & pair breakdown
+  const sessionStats = SESSIONS.map(s => {
+    const st = allT.filter(t=>t.session===s);
+    const sw = st.filter(t=>t.result==="WIN").length;
+    return { session:s, total:st.length, wins:sw, rate: st.length ? ((sw/st.length)*100).toFixed(0) : "0" };
+  }).filter(s=>s.total>0);
+
+  const pairStats = ["EURUSD","XAUUSD","GBPUSD"].map(p => {
+    const pt = allT.filter(t=>t.pair===p);
+    const pw = pt.filter(t=>t.result==="WIN").length;
+    return { pair:p, total:pt.length, wins:pw, rate: pt.length ? ((pw/pt.length)*100).toFixed(0) : "0" };
+  }).filter(p=>p.total>0);
+
+  // Daily loss warning
+  const todayStr      = new Date().toISOString().split("T")[0];
+  const todayLoss     = Math.abs(allT.filter(t=>t.date===todayStr&&(parseFloat(t.pnl)||0)<0).reduce((s,t)=>s+(parseFloat(t.pnl)||0),0));
+  const showDailyWarn = todayLoss >= 500;
+
+  // ── Calendar ──────────────────────────────────────────────
   const yr  = calDate.getFullYear(), mo = calDate.getMonth();
   const dim = new Date(yr,mo+1,0).getDate();
   const fd  = new Date(yr,mo,1).getDay();
@@ -158,8 +243,25 @@ export default function Journal() {
   function dayTrades(d) { return trades.filter(t=>t.date===dayStr(d)); }
   function dayPnL(d) { return dayTrades(d).reduce((s,t)=>s+(parseFloat(t.pnl)||0),0); }
 
-  // Filtered history
-  const filtered = filter==="ALL" ? trades : trades.filter(t=>t.pair===filter||t.result===filter);
+  const weeklyData = (() => {
+    const weeks = []; let wPnL=0, wCount=0, wStart=1;
+    for (let d=1; d<=dim; d++) {
+      wPnL += dayPnL(d); wCount += dayTrades(d).length;
+      if (new Date(yr,mo,d).getDay()===6 || d===dim) {
+        if (wCount>0) weeks.push({ label:`${MONTHS[mo]} ${wStart}${wStart!==d?`–${d}`:""}`, pnl:wPnL, trades:wCount });
+        wStart=d+1; wPnL=0; wCount=0;
+      }
+    }
+    return weeks;
+  })();
+
+  // ── Filtered history ──────────────────────────────────────
+  const filtered = trades.filter(t => {
+    if (filter!=="ALL" && t.pair!==filter && t.result!==filter) return false;
+    if (filterFrom && t.date < filterFrom) return false;
+    if (filterTo   && t.date > filterTo)   return false;
+    return true;
+  });
 
   const NAV = ["dashboard","log","history","calendar","mistakes"];
 
@@ -168,6 +270,13 @@ export default function Journal() {
       <style>{css}</style>
       <div style={{ minHeight:"100vh", background:C.bg, paddingBottom:48 }}>
 
+        {/* Daily loss warning banner */}
+        {showDailyWarn && (
+          <div style={{ background:C.red+"22", borderBottom:`2px solid ${C.red}`, padding:"10px 16px", textAlign:"center", color:C.red, fontWeight:700, fontSize:13 }}>
+            ⚠ DAILY LOSS LIMIT — Today's losses: {fmt(-todayLoss)}. Review before continuing.
+          </div>
+        )}
+
         {/* Nav */}
         <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100 }}>
           <div>
@@ -175,7 +284,7 @@ export default function Journal() {
             <div style={{ fontSize:9, color:C.muted, letterSpacing:"0.12em" }}>TRADE JOURNAL</div>
           </div>
           <div style={{ display:"flex", gap:3 }}>
-            {NAV.map(n => (
+            {NAV.map(n=>(
               <button key={n} onClick={()=>setTab(n)} style={{ background:tab===n?C.accent:"transparent", color:tab===n?"#000":C.muted, padding:"5px 10px", textTransform:"capitalize", fontSize:11 }}>{n}</button>
             ))}
           </div>
@@ -183,19 +292,22 @@ export default function Journal() {
 
         <div style={{ maxWidth:860, margin:"0 auto", padding:"20px 14px" }}>
 
-          {/* DASHBOARD */}
+          {/* ── DASHBOARD ──────────────────────────────────────── */}
           {tab==="dashboard" && (
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+              {/* All-time stats */}
               <Card>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12 }}>
-                  <Stat label="Net P&L (All)"  value={fmt(netPnL)}  color={netPnL>=0?C.accent:C.red} />
-                  <Stat label="Win Rate"        value={`${winRate}%`} color={parseFloat(winRate)>=55?C.accent:C.orange} />
-                  <Stat label="Total Trades"    value={allT.length} />
-                  <Stat label="Avg RR"          value={`${avgRR}R`}  color={parseFloat(avgRR)>=2?C.accent:C.orange} />
-                  <Stat label="Current Streak"  value={`${streak}W`} color={streak>=3?C.accent:C.text} />
+                  <Stat label="Net P&L (All)"   value={fmt(netPnL)}  color={netPnL>=0?C.accent:C.red} />
+                  <Stat label="Win Rate"         value={`${winRate}%`} color={parseFloat(winRate)>=55?C.accent:C.orange} />
+                  <Stat label="Total Trades"     value={allT.length} />
+                  <Stat label="Avg RR"           value={`${avgRR}R`}  color={parseFloat(avgRR)>=2?C.accent:C.orange} />
+                  <Stat label="Current Streak"   value={streak>=3?`🔥 ${streak}W`:`${streak}W`} color={streak>=3?C.accent:C.text} />
                 </div>
               </Card>
 
+              {/* Win / Loss / BE */}
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
                 {[["WINS",wins,C.accent],["LOSSES",losses,C.red],["BREAKEVEN",bes,C.orange]].map(([l,v,c])=>(
                   <Card key={l} style={{ textAlign:"center" }}>
@@ -205,29 +317,140 @@ export default function Journal() {
                 ))}
               </div>
 
-              {/* FTMO Tracker */}
-              <Card style={{ borderColor:C.accent+"33" }}>
+              {/* FTMO Tracker — prominent */}
+              <Card style={{ border:`2px solid ${C.accent}44` }}>
                 <SectionTitle>FTMO CHALLENGE — £10,000 SWING</SectionTitle>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:14 }}>
-                  <div><div style={{ fontSize:10, color:C.muted }}>BALANCE</div><div style={{ fontSize:18, fontWeight:800 }}>£{ftmoBalance.toFixed(2)}</div></div>
-                  <div><div style={{ fontSize:10, color:C.muted }}>TARGET</div><div style={{ fontSize:18, fontWeight:800, color:C.accent }}>£11,000</div></div>
-                  <div><div style={{ fontSize:10, color:C.muted }}>FLOOR</div><div style={{ fontSize:18, fontWeight:800, color:C.red }}>£9,000</div></div>
-                  <div><div style={{ fontSize:10, color:C.muted }}>BUFFER</div><div style={{ fontSize:18, fontWeight:800, color:ftmoBalance-9000<300?C.red:C.orange }}>£{Math.max(0,ftmoBalance-9000).toFixed(2)}</div></div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
+                  <div>
+                    <div style={{ fontSize:10, color:C.muted, marginBottom:4 }}>BALANCE</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:ftmoBalance>=BASE_BALANCE?C.accent:C.red }}>£{ftmoBalance.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:10, color:C.muted, marginBottom:4 }}>TARGET</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:C.accent }}>£{FTMO_TARGET.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:10, color:C.muted, marginBottom:4 }}>FLOOR</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:C.red }}>£{FTMO_FLOOR.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:10, color:C.muted, marginBottom:4 }}>BUFFER</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:(ftmoBalance-FTMO_FLOOR)<300?C.red:C.orange }}>£{Math.max(0,ftmoBalance-FTMO_FLOOR).toFixed(2)}</div>
+                  </div>
                 </div>
-                <div style={{ background:C.dim, borderRadius:4, height:8, overflow:"hidden" }}>
-                  <div style={{ width:`${Math.min(100,Math.max(0,(ftmoPnL/1000)*100))}%`, background:ftmoPnL>800?C.accent:ftmoPnL>400?C.orange:C.red, height:"100%", borderRadius:4, transition:"width 0.4s" }} />
+
+                <div style={{ background:C.dim, borderRadius:6, height:12, overflow:"hidden", marginBottom:8 }}>
+                  <div style={{ width:`${ftmoProgress}%`, background:ftmoProgress>80?C.accent:ftmoProgress>40?C.orange:C.red, height:"100%", borderRadius:6, transition:"width 0.4s" }} />
                 </div>
-                <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
-                  <span style={{ fontSize:11, color:C.muted }}>{((ftmoPnL/1000)*100).toFixed(1)}% to profit target</span>
-                  <span style={{ fontSize:11, color:C.muted }}>FTMO Trades: {ftmoTrades.length}</span>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                  <span style={{ fontSize:12, color:C.muted }}>{ftmoProgress.toFixed(1)}% to profit target</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.accent }}>{motivMsg}</span>
+                </div>
+
+                {/* FTMO sub-stats */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, paddingTop:14, borderTop:`1px solid ${C.border}` }}>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:20, fontWeight:800, color:parseFloat(ftmoWinRate)>=55?C.accent:C.orange }}>{ftmoWinRate}%</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>FTMO WIN RATE</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:20, fontWeight:800 }}>{ftmoTrades.length}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>FTMO TRADES</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:20, fontWeight:800, color:ftmoPnL>=0?C.accent:C.red }}>{fmt(ftmoPnL)}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>FTMO NET P&L</div>
+                  </div>
                 </div>
               </Card>
 
-              {/* Recent 5 */}
+              {/* Cumulative P&L chart */}
+              <Card>
+                <SectionTitle>CUMULATIVE P&L</SectionTitle>
+                <PnLChart trades={allT} />
+                {allT.length>=2 && (
+                  <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
+                    <span style={{ fontSize:10, color:C.muted }}>{[...allT].sort((a,b)=>a.date<b.date?-1:1)[0].date}</span>
+                    <span style={{ fontSize:10, color:netPnL>=0?C.accent:C.red, fontWeight:700 }}>{fmt(netPnL)}</span>
+                    <span style={{ fontSize:10, color:C.muted }}>{[...allT].sort((a,b)=>a.date>b.date?-1:1)[0].date}</span>
+                  </div>
+                )}
+              </Card>
+
+              {/* Risk management */}
+              <Card>
+                <SectionTitle>RISK MANAGEMENT</SectionTitle>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:14 }}>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:20, fontWeight:800, color:C.accent }}>+£{bestWin.toFixed(2)}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>BEST WIN</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:20, fontWeight:800, color:C.red }}>-£{Math.abs(maxLoss).toFixed(2)}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>MAX LOSS</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:20, fontWeight:800, color:parseFloat(wlRatio)>=1?C.accent:C.orange }}>{wlRatio!=="N/A"?`${wlRatio}:1`:"N/A"}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>WIN/LOSS RATIO</div>
+                  </div>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:16, fontWeight:700, color:C.accent }}>+£{avgWin.toFixed(2)}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>AVG WIN</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:16, fontWeight:700, color:C.red }}>-£{avgLoss.toFixed(2)}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>AVG LOSS</div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Session & pair breakdown */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <Card>
+                  <SectionTitle>BY SESSION</SectionTitle>
+                  {sessionStats.length===0
+                    ? <div style={{ color:C.muted, fontSize:12 }}>No data yet.</div>
+                    : sessionStats.map(s=>(
+                      <div key={s.session} style={{ marginBottom:12 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ fontSize:12 }}>{s.session}</span>
+                          <span style={{ fontSize:12, fontWeight:700, color:parseInt(s.rate)>=55?C.accent:C.orange }}>{s.rate}%</span>
+                        </div>
+                        <div style={{ background:C.dim, borderRadius:3, height:4 }}>
+                          <div style={{ width:`${s.rate}%`, background:parseInt(s.rate)>=55?C.accent:C.orange, height:"100%", borderRadius:3 }} />
+                        </div>
+                        <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>{s.wins}W / {s.total-s.wins}L · {s.total} trades</div>
+                      </div>
+                    ))
+                  }
+                </Card>
+                <Card>
+                  <SectionTitle>BY PAIR</SectionTitle>
+                  {pairStats.length===0
+                    ? <div style={{ color:C.muted, fontSize:12 }}>No data yet.</div>
+                    : pairStats.map(p=>(
+                      <div key={p.pair} style={{ marginBottom:12 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ fontSize:12 }}>{p.pair}</span>
+                          <span style={{ fontSize:12, fontWeight:700, color:parseInt(p.rate)>=55?C.accent:C.orange }}>{p.rate}%</span>
+                        </div>
+                        <div style={{ background:C.dim, borderRadius:3, height:4 }}>
+                          <div style={{ width:`${p.rate}%`, background:parseInt(p.rate)>=55?C.accent:C.orange, height:"100%", borderRadius:3 }} />
+                        </div>
+                        <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>{p.wins}W / {p.total-p.wins}L · {p.total} trades</div>
+                      </div>
+                    ))
+                  }
+                </Card>
+              </div>
+
+              {/* Recent trades */}
               {trades.length>0 && (
                 <Card>
                   <SectionTitle>RECENT TRADES</SectionTitle>
-                  {trades.slice(0,5).map(t => (
+                  {trades.slice(0,5).map(t=>(
                     <div key={t.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
                       <div style={{ display:"flex", gap:10, alignItems:"center" }}>
                         <Badge c={resultColor(t.result)} label={t.result} />
@@ -255,7 +478,7 @@ export default function Journal() {
             </div>
           )}
 
-          {/* LOG */}
+          {/* ── LOG ────────────────────────────────────────────── */}
           {tab==="log" && (
             <Card>
               <SectionTitle>{editing?"EDIT TRADE":"LOG NEW TRADE"}</SectionTitle>
@@ -301,13 +524,23 @@ export default function Journal() {
             </Card>
           )}
 
-          {/* HISTORY */}
+          {/* ── HISTORY ────────────────────────────────────────── */}
           {tab==="history" && (
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {/* Pair / result filter */}
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                 {["ALL","EURUSD","XAUUSD","GBPUSD","WIN","LOSS"].map(f=>(
                   <button key={f} onClick={()=>setFilter(f)} style={{ background:filter===f?C.accent:C.dim, color:filter===f?"#000":C.muted, fontSize:11 }}>{f}</button>
                 ))}
+              </div>
+              {/* Date range + export */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:8, alignItems:"end" }}>
+                <div><label>From</label><input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} /></div>
+                <div><label>To</label><input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} /></div>
+                <div style={{ display:"flex", gap:6, paddingBottom:1 }}>
+                  <button onClick={()=>{setFilterFrom("");setFilterTo("");}} style={{ background:C.dim, color:C.muted }}>Clear</button>
+                  <button onClick={exportCSV} style={{ background:C.accent+"22", color:C.accent }}>Export CSV</button>
+                </div>
               </div>
               {filtered.length===0 && <Card><div style={{ color:C.muted, textAlign:"center", padding:24 }}>No trades found.</div></Card>}
               {filtered.map(t=>(
@@ -344,7 +577,7 @@ export default function Journal() {
             </div>
           )}
 
-          {/* CALENDAR */}
+          {/* ── CALENDAR ───────────────────────────────────────── */}
           {tab==="calendar" && (
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
               <Card>
@@ -378,6 +611,22 @@ export default function Journal() {
                 </div>
               </Card>
 
+              {/* Weekly P&L summary */}
+              {weeklyData.length>0 && (
+                <Card>
+                  <SectionTitle>WEEKLY P&L — {MONTHS[mo]} {yr}</SectionTitle>
+                  {weeklyData.map((w,i)=>(
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
+                      <span style={{ fontSize:12 }}>{w.label}</span>
+                      <div style={{ display:"flex", gap:14, alignItems:"center" }}>
+                        <span style={{ fontSize:11, color:C.muted }}>{w.trades} trade{w.trades!==1?"s":""}</span>
+                        <span style={{ fontWeight:700, color:w.pnl>=0?C.accent:C.red }}>{fmt(w.pnl)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </Card>
+              )}
+
               {selDay && dayTrades(selDay).length>0 && (
                 <Card>
                   <SectionTitle>{MONTHS[mo]} {selDay} — {dayTrades(selDay).length} trade(s)</SectionTitle>
@@ -395,12 +644,18 @@ export default function Journal() {
 
               <Card>
                 <SectionTitle>SESSION NOTES — {MONTHS[mo]} {yr}</SectionTitle>
-                <textarea rows={4} placeholder="Pre/post session notes, market context, mindset..." value={notes[`${yr}-${mo}`]||""} onChange={e=>setNotes(p=>({...p,[`${yr}-${mo}`]:e.target.value}))} />
+                <textarea
+                  rows={4}
+                  placeholder="Pre/post session notes, market context, mindset..."
+                  value={notes[`${yr}-${mo}`]||""}
+                  onChange={e => setNotes(p=>({...p,[`${yr}-${mo}`]:e.target.value}))}
+                  onBlur={e  => save("tj_notes2", {...notes,[`${yr}-${mo}`]:e.target.value})}
+                />
               </Card>
             </div>
           )}
 
-          {/* MISTAKES */}
+          {/* ── MISTAKES ───────────────────────────────────────── */}
           {tab==="mistakes" && (
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
               <Card>
@@ -422,7 +677,7 @@ export default function Journal() {
               </Card>
 
               <Card style={{ borderColor:C.orange+"44" }}>
-                <SectionTitle style={{ color:C.orange }}>YOUR KNOWN WEAKNESSES</SectionTitle>
+                <SectionTitle>YOUR KNOWN WEAKNESSES</SectionTitle>
                 {["Entering before confirmation is complete","Emotional bias once a trade idea forms","SL placed at liquidity — not beyond it with buffer","Overconfidence in visually good-looking setups"].map(w=>(
                   <div key={w} style={{ display:"flex", gap:8, marginBottom:8 }}>
                     <span style={{ color:C.orange }}>▸</span>
@@ -449,6 +704,7 @@ export default function Journal() {
               </Card>
             </div>
           )}
+
         </div>
       </div>
     </>
