@@ -11,39 +11,43 @@ async function save(key, val) {
 
 // ── Pre-seeded trade history ─────────────────────────────────
 const SEED_TRADES = [
-  { id:1, date:"2025-12-10", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.16128", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-99.59,  mistake:"None", notes:"", step_failed:"" },
-  { id:2, date:"2025-12-10", pair:"GBPUSD", session:"New York", bias:"BEAR", entry:"1.33026", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-44.13,  mistake:"None", notes:"", step_failed:"" },
-  { id:3, date:"2025-12-23", pair:"GBPUSD", session:"London",   bias:"BULL", entry:"1.34779", sl:"", tp:"", rr:"", result:"WIN",       pnl:109.76,  mistake:"None", notes:"", step_failed:"" },
-  { id:4, date:"2025-12-26", pair:"GBPUSD", session:"London",   bias:"BEAR", entry:"1.35037", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-78.19,  mistake:"None", notes:"", step_failed:"" },
-  { id:5, date:"2025-12-29", pair:"EURUSD", session:"New York", bias:"BULL", entry:"1.17643", sl:"", tp:"", rr:"", result:"WIN",       pnl:18.79,   mistake:"None", notes:"", step_failed:"" },
-  { id:6, date:"2025-12-30", pair:"EURUSD", session:"New York", bias:"BULL", entry:"1.17699", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-51.61,  mistake:"None", notes:"", step_failed:"" },
-  { id:7, date:"2026-01-27", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.18957", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-160.79, mistake:"None", notes:"", step_failed:"" },
-  { id:8, date:"2026-03-02", pair:"GBPUSD", session:"London",   bias:"BULL", entry:"1.35693", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-233.56, mistake:"None", notes:"", step_failed:"" },
-  { id:9, date:"2026-03-17", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.15036", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-61.18,  mistake:"None", notes:"", step_failed:"" },
-  { id:10,date:"2026-04-17", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.17826", sl:"", tp:"", rr:"", result:"WIN",       pnl:84.17,   mistake:"None", notes:"Trade 1 FTMO challenge", step_failed:"" },
-  { id:11,date:"2026-04-20", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.17674", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-50.53,  mistake:"None", notes:"Trade 2 FTMO challenge", step_failed:"" },
-  { id:12,date:"2026-04-23", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.17054", sl:"", tp:"", rr:"", result:"WIN",       pnl:73.16,   mistake:"None", notes:"Trade 3 FTMO challenge", step_failed:"" },
-  { id:13,date:"2026-04-27", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17138", sl:"", tp:"", rr:"", result:"WIN",       pnl:24.97,   mistake:"None", notes:"Trade 4 FTMO challenge", step_failed:"" },
-  { id:14,date:"2026-04-28", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17319", sl:"", tp:"", rr:"", result:"WIN",       pnl:95.21,   mistake:"None", notes:"Trade 5 FTMO challenge", step_failed:"" },
-  { id:15,date:"2026-04-29", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17104", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-48.51,  mistake:"SL too close to liquidity", notes:"Trade 6 FTMO — SL stopped then price ran to TP", step_failed:"SL placement" },
-  { id:16,date:"2026-05-05", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.16888", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-46.94,  mistake:"None", notes:"Trade 7 FTMO challenge", step_failed:"" },
-  { id:17,date:"2026-05-08", pair:"XAUUSD", session:"London",   bias:"BULL", entry:"4704.91", sl:"", tp:"", rr:"", result:"BREAKEVEN", pnl:0.07,    mistake:"None", notes:"Trade 8 FTMO — Gold test", step_failed:"" },
-  { id:18,date:"2026-05-11", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17749", sl:"", tp:"", rr:"", result:"WIN",       pnl:94.33,   mistake:"None", notes:"Trade 9 FTMO challenge", step_failed:"" },
-  { id:19,date:"2026-05-12", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17851", sl:"", tp:"", rr:"", result:"WIN",       pnl:123.46,  mistake:"None", notes:"Trade 10 FTMO challenge", step_failed:"" },
-  { id:20,date:"2026-05-15", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.17116", sl:"", tp:"", rr:"", result:"WIN",       pnl:71.99,   mistake:"None", notes:"Trade 11 FTMO — partial close", step_failed:"" },
-  { id:21,date:"2026-05-18", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.16448", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-53.58,  mistake:"None", notes:"", step_failed:"" },
-  { id:22,date:"2026-05-19", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.16333", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-55.66,  mistake:"None", notes:"", step_failed:"" },
-  { id:23,date:"2026-05-20", pair:"XAUUSD", session:"New York", bias:"BULL", entry:"4531.59", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-4.17,   mistake:"None", notes:"", step_failed:"" },
-  { id:24,date:"2026-05-20", pair:"XAUUSD", session:"New York", bias:"BULL", entry:"4536.03", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-14.13,  mistake:"None", notes:"", step_failed:"" },
-  { id:25,date:"2026-05-21", pair:"XAUUSD", session:"London",   bias:"BULL", entry:"4532.68", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-54.18,  mistake:"None", notes:"", step_failed:"" },
-  { id:26,date:"2026-05-22", pair:"XAUUSD", session:"London",   bias:"BEAR", entry:"4534.59", sl:"", tp:"", rr:"", result:"WIN",       pnl:11.74,   mistake:"None", notes:"", step_failed:"" },
-  { id:27,date:"2026-05-22", pair:"EURUSD", session:"New York", bias:"BULL", entry:"1.15965", sl:"", tp:"", rr:"", result:"WIN",       pnl:92.93,   mistake:"None", notes:"", step_failed:"" },
-  { id:28,date:"2026-05-25", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4573.31", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-70.05,  mistake:"None", notes:"", step_failed:"" },
-  { id:29,date:"2026-05-25", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4571.12", sl:"", tp:"", rr:"", result:"WIN",       pnl:90.93,   mistake:"None", notes:"", step_failed:"" },
-  { id:30,date:"2026-05-26", pair:"XAUUSD", session:"London",   bias:"BULL", entry:"4519.39", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-49.52,  mistake:"None", notes:"", step_failed:"" },
-  { id:31,date:"2026-05-28", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.16333", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-57.18,  mistake:"None", notes:"", step_failed:"" },
-  { id:32,date:"2026-05-28", pair:"XAUUSD", session:"London",   bias:"BEAR", entry:"4395.37", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-61.62,  mistake:"None", notes:"", step_failed:"" },
-  { id:33,date:"2026-05-28", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4468.14", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-69.52,  mistake:"None", notes:"", step_failed:"" },
+  { id:1,  date:"2025-12-03", pair:"GBPUSD", session:"New York", bias:"BEAR", entry:"1.32101", sl:"1.33098", tp:"1.30362", rr:"1.74", result:"LOSS",      pnl:-52.64,  mistake:"None", notes:"", step_failed:"" },
+  { id:2,  date:"2025-12-10", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.16128", sl:"1.16961", tp:"1.15310", rr:"0.98", result:"LOSS",      pnl:-99.59,  mistake:"None", notes:"", step_failed:"" },
+  { id:3,  date:"2025-12-10", pair:"GBPUSD", session:"New York", bias:"BEAR", entry:"1.33026", sl:"1.33870", tp:"1.30086", rr:"3.48", result:"LOSS",      pnl:-44.13,  mistake:"None", notes:"", step_failed:"" },
+  { id:4,  date:"2025-12-23", pair:"GBPUSD", session:"London",   bias:"BULL", entry:"1.34779", sl:"1.34626", tp:"1.35190", rr:"2.69", result:"WIN",       pnl:109.76,  mistake:"None", notes:"", step_failed:"" },
+  { id:5,  date:"2025-12-26", pair:"GBPUSD", session:"London",   bias:"BEAR", entry:"1.35037", sl:"1.35183", tp:"1.34771", rr:"1.82", result:"LOSS",      pnl:-78.19,  mistake:"None", notes:"", step_failed:"" },
+  { id:6,  date:"2025-12-29", pair:"EURUSD", session:"New York", bias:"BULL", entry:"1.17643", sl:"1.17480", tp:"1.18028", rr:"2.36", result:"WIN",       pnl:18.79,   mistake:"None", notes:"", step_failed:"" },
+  { id:7,  date:"2025-12-30", pair:"EURUSD", session:"New York", bias:"BULL", entry:"1.17699", sl:"1.17480", tp:"1.18028", rr:"1.50", result:"LOSS",      pnl:-51.61,  mistake:"None", notes:"", step_failed:"" },
+  { id:8,  date:"2026-01-27", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.18957", sl:"1.19361", tp:"1.18222", rr:"1.82", result:"LOSS",      pnl:-160.79, mistake:"None", notes:"", step_failed:"" },
+  { id:9,  date:"2026-03-02", pair:"GBPUSD", session:"London",   bias:"BULL", entry:"1.35693", sl:"1.33854", tp:"1.38713", rr:"1.64", result:"LOSS",      pnl:-233.56, mistake:"None", notes:"", step_failed:"" },
+  { id:10, date:"2026-03-17", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.15036", sl:"1.15350", tp:"1.13918", rr:"3.56", result:"LOSS",      pnl:-61.18,  mistake:"None", notes:"", step_failed:"" },
+  { id:11, date:"2026-04-17", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.17826", sl:"1.17594", tp:"1.18148", rr:"1.39", result:"WIN",       pnl:84.17,   mistake:"None", notes:"Trade 1 FTMO challenge", step_failed:"" },
+  { id:12, date:"2026-04-20", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.17674", sl:"1.17863", tp:"1.17445", rr:"1.21", result:"LOSS",      pnl:-50.53,  mistake:"None", notes:"Trade 2 FTMO challenge", step_failed:"" },
+  { id:13, date:"2026-04-23", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.17054", sl:"1.17244", tp:"1.16881", rr:"0.91", result:"WIN",       pnl:73.16,   mistake:"None", notes:"Trade 3 FTMO challenge", step_failed:"" },
+  { id:14, date:"2026-04-27", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17138", sl:"1.17284", tp:"1.17014", rr:"0.85", result:"WIN",       pnl:24.97,   mistake:"None", notes:"Trade 4 FTMO challenge", step_failed:"" },
+  { id:15, date:"2026-04-28", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17319", sl:"1.17413", tp:"1.17158", rr:"1.71", result:"WIN",       pnl:95.21,   mistake:"None", notes:"Trade 5 FTMO challenge", step_failed:"" },
+  { id:16, date:"2026-04-29", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17104", sl:"1.17186", tp:"1.16931", rr:"2.11", result:"LOSS",      pnl:-48.51,  mistake:"SL too close to liquidity", notes:"Trade 6 FTMO — SL stopped then price ran to TP", step_failed:"SL placement" },
+  { id:17, date:"2026-05-05", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.16888", sl:"1.17079", tp:"1.16467", rr:"2.20", result:"LOSS",      pnl:-46.94,  mistake:"None", notes:"Trade 7 FTMO challenge", step_failed:"" },
+  { id:18, date:"2026-05-08", pair:"XAUUSD", session:"London",   bias:"BULL", entry:"4704.91", sl:"4668.41", tp:"4764.60", rr:"1.64", result:"BREAKEVEN", pnl:0.07,    mistake:"None", notes:"Trade 8 FTMO — Gold test", step_failed:"" },
+  { id:19, date:"2026-05-11", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17749", sl:"1.17894", tp:"1.17572", rr:"1.22", result:"WIN",       pnl:94.33,   mistake:"None", notes:"Trade 9 FTMO challenge", step_failed:"" },
+  { id:20, date:"2026-05-12", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.17851", sl:"1.17976", tp:"1.17576", rr:"2.20", result:"WIN",       pnl:123.46,  mistake:"None", notes:"Trade 10 FTMO challenge", step_failed:"" },
+  { id:21, date:"2026-05-15", pair:"EURUSD", session:"New York", bias:"BEAR", entry:"1.17116", sl:"1.17272", tp:"1.16717", rr:"2.56", result:"WIN",       pnl:71.99,   mistake:"None", notes:"Trade 11 FTMO — partial close", step_failed:"" },
+  { id:22, date:"2026-05-18", pair:"EURUSD", session:"London",   bias:"BEAR", entry:"1.16448", sl:"1.16590", tp:"1.16183", rr:"1.87", result:"LOSS",      pnl:-53.58,  mistake:"None", notes:"", step_failed:"" },
+  { id:23, date:"2026-05-19", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.16173", sl:"1.15977", tp:"1.16511", rr:"1.72", result:"LOSS",      pnl:-55.66,  mistake:"None", notes:"", step_failed:"" },
+  { id:24, date:"2026-05-20", pair:"XAUUSD", session:"New York", bias:"BULL", entry:"4531.59", sl:"4496.50", tp:"4592.09", rr:"1.72", result:"LOSS",      pnl:-4.17,   mistake:"None", notes:"", step_failed:"" },
+  { id:25, date:"2026-05-20", pair:"XAUUSD", session:"New York", bias:"BULL", entry:"4536.03", sl:"4535.17", tp:"",        rr:"",    result:"LOSS",      pnl:-14.13,  mistake:"None", notes:"", step_failed:"" },
+  { id:26, date:"2026-05-21", pair:"XAUUSD", session:"London",   bias:"BULL", entry:"4532.68", sl:"4496.50", tp:"4599.18", rr:"1.84", result:"LOSS",      pnl:-54.18,  mistake:"None", notes:"", step_failed:"" },
+  { id:27, date:"2026-05-22", pair:"XAUUSD", session:"London",   bias:"BEAR", entry:"4534.59", sl:"4541.04", tp:"4525.95", rr:"1.34", result:"WIN",       pnl:11.74,   mistake:"None", notes:"", step_failed:"" },
+  { id:28, date:"2026-05-22", pair:"EURUSD", session:"New York", bias:"BULL", entry:"1.15965", sl:"1.15867", tp:"1.16139", rr:"1.78", result:"WIN",       pnl:92.93,   mistake:"None", notes:"", step_failed:"" },
+  { id:29, date:"2026-05-25", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4573.31", sl:"4577.85", tp:"4568.79", rr:"1.00", result:"LOSS",      pnl:-70.05,  mistake:"None", notes:"", step_failed:"" },
+  { id:30, date:"2026-05-25", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4571.12", sl:"",        tp:"4563.02", rr:"",    result:"WIN",       pnl:90.93,   mistake:"None", notes:"", step_failed:"" },
+  { id:31, date:"2026-05-26", pair:"XAUUSD", session:"London",   bias:"BULL", entry:"4519.39", sl:"4508.95", tp:"4532.13", rr:"1.22", result:"LOSS",      pnl:-49.52,  mistake:"None", notes:"", step_failed:"" },
+  { id:32, date:"2026-05-28", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.16333", sl:"1.16196", tp:"1.16611", rr:"2.03", result:"LOSS",      pnl:-57.18,  mistake:"None", notes:"", step_failed:"" },
+  { id:33, date:"2026-05-28", pair:"XAUUSD", session:"London",   bias:"BEAR", entry:"4395.37", sl:"4422.54", tp:"4366.66", rr:"1.06", result:"LOSS",      pnl:-61.62,  mistake:"None", notes:"", step_failed:"" },
+  { id:34, date:"2026-05-28", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4468.14", sl:"4499.59", tp:"4421.28", rr:"1.49", result:"LOSS",      pnl:-69.52,  mistake:"None", notes:"", step_failed:"" },
+  { id:35, date:"2026-06-01", pair:"XAUUSD", session:"New York", bias:"BULL", entry:"4456.11", sl:"4442.53", tp:"4478.76", rr:"1.67", result:"WIN",       pnl:204.63,  mistake:"None", notes:"", step_failed:"" },
+  { id:36, date:"2026-06-02", pair:"EURUSD", session:"London",   bias:"BULL", entry:"1.16532", sl:"1.16436", tp:"1.16709", rr:"1.84", result:"LOSS",      pnl:-52.73,  mistake:"None", notes:"", step_failed:"" },
+  { id:37, date:"2026-06-03", pair:"XAUUSD", session:"New York", bias:"BEAR", entry:"4502.81", sl:"4519.13", tp:"4473.55", rr:"1.79", result:"WIN",       pnl:65.24,   mistake:"None", notes:"", step_failed:"" },
 ].reverse();
 
 const PAIRS    = ["EURUSD","XAUUSD","GBPUSD","Other"];
@@ -103,16 +107,16 @@ export default function Journal() {
 
   useEffect(() => {
     (async () => {
-      const t = await load("tj_trades2");
+      const t = await load("tj_trades3");
       const n = await load("tj_notes2");
       if (t && t.length > 0) setTrades(t);
-      else { setTrades(SEED_TRADES); await save("tj_trades2", SEED_TRADES); }
+      else { setTrades(SEED_TRADES); await save("tj_trades3", SEED_TRADES); }
       if (n) setNotes(n);
       setLoaded(true);
     })();
   }, []);
 
-  useEffect(() => { if (loaded) save("tj_trades2", trades); }, [trades, loaded]);
+  useEffect(() => { if (loaded) save("tj_trades3", trades); }, [trades, loaded]);
   useEffect(() => { if (loaded) save("tj_notes2",  notes);  }, [notes,  loaded]);
 
   function submitTrade() {
