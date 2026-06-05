@@ -49,7 +49,7 @@ const SESSIONS = ["London","New York","London/NY Overlap","Asian"];
 const RESULTS  = ["WIN","LOSS","BREAKEVEN"];
 const MISTAKES = ["None","Entered before confirmation","Emotional bias","SL too close to liquidity","Overconfidence in setup","Traded outside session","Ignored news event","Both pairs simultaneously"];
 const MONTHS   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const EMPTY    = { id:null, date:"", pair:"EURUSD", session:"London", bias:"BULL", entry:"", sl:"", tp:"", rr:"", result:"WIN", pnl:"", mistake:"None", notes:"", step_failed:"" };
+const EMPTY    = { id:null, date:"", pair:"EURUSD", session:"London", bias:"BULL", entry:"", sl:"", tp:"", rr:"", result:"WIN", pnl:"", mistake:"None", notes:"", step_failed:"", chart_url:"" };
 const C        = { bg:"#0a0a0f", card:"#0f0f1a", border:"#1a1a2e", accent:"#00c896", red:"#ff4466", orange:"#ffaa00", muted:"#444466", text:"#e0e0f0", dim:"#1c1c2e" };
 
 const css = `
@@ -516,6 +516,10 @@ export default function Journal() {
                   <label>Notes / Key Lesson</label>
                   <textarea rows={3} value={form.notes} onChange={e=>uf("notes",e.target.value)} placeholder="What happened? What did you learn?" />
                 </div>
+                <div style={{ gridColumn:"1/-1" }}>
+                  <label>Chart Screenshot (TradingView URL)</label>
+                  <input type="url" value={form.chart_url||""} onChange={e=>uf("chart_url",e.target.value)} placeholder="https://www.tradingview.com/..." />
+                </div>
               </div>
               <div style={{ display:"flex", gap:8, marginTop:16 }}>
                 <button onClick={submitTrade} style={{ background:C.accent, color:"#000", flex:1 }}>{editing?"Save Changes":"Log Trade"}</button>
@@ -568,6 +572,7 @@ export default function Journal() {
                   {t.mistake&&t.mistake!=="None" && <div style={{ marginTop:8 }}><Badge c={C.orange} label={`⚠ ${t.mistake}`} /></div>}
                   {t.step_failed && <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>Step failed: {t.step_failed}</div>}
                   {t.notes && <div style={{ fontSize:12, color:C.muted, marginTop:6, fontStyle:"italic" }}>"{t.notes}"</div>}
+                  {t.chart_url && <div style={{ marginTop:6 }}><a href={t.chart_url} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, color:C.accent, textDecoration:"none", fontWeight:600 }}>View Chart ↗</a></div>}
                   <div style={{ display:"flex", gap:6, marginTop:12 }}>
                     <button onClick={()=>editTrade(t)} style={{ background:C.dim, color:C.text }}>Edit</button>
                     <button onClick={()=>deleteTrade(t.id)} style={{ background:C.red+"22", color:C.red }}>Delete</button>
