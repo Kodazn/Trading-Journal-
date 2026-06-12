@@ -179,7 +179,7 @@ export default function TradeForm({ onTradeAdded }: TradeFormProps) {
               onChange={handleInputChange}
               className="bg-slate-800 border border-slate-700 text-slate-100 px-3 py-2 rounded focus:outline-none focus:border-purple-500"
             >
-              {['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'NZDUSD', 'XAUUSD'].map(
+              {['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'NZDUSD', 'XAUUSD', 'NAS100', 'MGC', 'MNQ'].map(
                 (pair) => (
                   <option key={pair} value={pair}>
                     {pair}

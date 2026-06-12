@@ -44,7 +44,7 @@ const SEED_TRADES = [
   { id:33, date:"2026-05-28", pair:"XAUUSD", session:"New York",          bias:"BEAR", entry:"4468.14", sl:"", tp:"", rr:"", result:"LOSS",      pnl:-69.52,  mistake:"None", notes:"", step_failed:"" },
 ].reverse();
 
-const PAIRS    = ["EURUSD","XAUUSD","GBPUSD","Other"];
+const PAIRS    = ["EURUSD","XAUUSD","GBPUSD","NAS100","MGC","MNQ","Other"];
 const SESSIONS = ["London","New York","London/NY Overlap","Asian"];
 const RESULTS  = ["WIN","LOSS","BREAKEVEN"];
 const MISTAKES = ["None","Entered before confirmation","Emotional bias","SL too close to liquidity","Overconfidence in setup","Traded outside session","Ignored news event","Both pairs simultaneously"];
@@ -111,17 +111,18 @@ function PnLChart({ trades }) {
 
 function calcRR(f) {
   const e=parseFloat(f.entry), s=parseFloat(f.sl), t=parseFloat(f.tp);
-  if (!e||!s||!t) return "";
+  if (isNaN(e)||isNaN(s)||isNaN(t)||f.entry===""||f.sl===""||f.tp==="") return "";
   const risk=Math.abs(e-s), reward=Math.abs(t-e);
   return risk>0 ? (reward/risk).toFixed(2) : "";
 }
-function fmt(n) { return n>=0 ? `+£${Math.abs(n).toFixed(2)}` : `-£${Math.abs(n).toFixed(2)}`; }
+function fmt(n)    { return n>=0 ? `+£${Math.abs(n).toFixed(2)}` : `-£${Math.abs(n).toFixed(2)}`; }
+function fmtUSD(n) { return n>=0 ? `+$${Math.abs(n).toFixed(2)}` : `-$${Math.abs(n).toFixed(2)}`; }
 function resultColor(r) { return r==="WIN" ? C.accent : r==="LOSS" ? C.red : C.orange; }
 
-const BASE_BALANCE  = 9275.05;
-const FTMO_TARGET   = 11000;
-const FTMO_FLOOR    = 9000;
-const FTMO_START    = "2026-04-16";
+const BASE_BALANCE   = 50000;
+const LUCID_TARGET   = 53000;   // +$3,000 profit target (6%)
+const LUCID_FLOOR    = 48000;   // -$2,000 EOD trailing drawdown
+const LUCID_START    = "2026-06-12";
 
 export default function Journal() {
   const [tab,       setTab]       = useState("dashboard");
@@ -152,7 +153,7 @@ export default function Journal() {
 
   function submitTrade() {
     if (!form.date) return;
-    const t = { ...form, id: editing ? form.id : Date.now(), rr: form.rr || calcRR(form), pnl: parseFloat(form.pnl)||0 };
+    const t = { ...form, id: editing ? form.id : Date.now(), rr: calcRR(form), pnl: parseFloat(form.pnl)||0 };
     const next = editing ? trades.map(x => x.id===t.id ? t : x) : [t, ...trades];
     setTrades(next);
     save("tj_trades2", next);
@@ -167,7 +168,8 @@ export default function Journal() {
     save("tj_trades2", next);
   }
   function editTrade(t) { setForm({...t, pnl:t.pnl?.toString()||""}); setEditing(true); setTab("log"); window.scrollTo(0,0); }
-  function uf(k,v) { setForm(p => { const n={...p,[k]:v}; if(["entry","sl","tp"].includes(k)) n.rr=calcRR(n); return n; }); }
+  function uf(k,v) { setForm(p => ({...p,[k]:v})); }
+  function refreshRR() { setForm(p => ({...p, rr:calcRR(p)})); }
 
   function exportCSV() {
     const headers = ["Date","Pair","Session","Bias","Entry","SL","TP","RR","Result","P&L","Mistake","Step Failed","Notes"];
@@ -184,13 +186,11 @@ export default function Journal() {
   }
 
   // ── Stats ─────────────────────────────────────────────────
-  const ftmoTrades  = trades.filter(t => t.date >= FTMO_START);
   const allT        = trades;
   const wins        = allT.filter(t=>t.result==="WIN").length;
   const losses      = allT.filter(t=>t.result==="LOSS").length;
   const bes         = allT.filter(t=>t.result==="BREAKEVEN").length;
   const netPnL      = allT.reduce((s,t)=>s+(parseFloat(t.pnl)||0),0);
-  const ftmoPnL     = ftmoTrades.reduce((s,t)=>s+(parseFloat(t.pnl)||0),0);
   const winRate     = allT.length ? ((wins/allT.length)*100).toFixed(1) : "0.0";
   const rrTrades    = allT.filter(t=>parseFloat(t.rr)>0);
   const avgRR       = rrTrades.length ? (rrTrades.reduce((s,t)=>s+parseFloat(t.rr),0)/rrTrades.length).toFixed(2) : "0.00";
@@ -198,15 +198,22 @@ export default function Journal() {
   const mistakeCounts = trades.reduce((a,t)=>{ if(t.mistake&&t.mistake!=="None") a[t.mistake]=(a[t.mistake]||0)+1; return a; },{});
   const topMistake  = Object.entries(mistakeCounts).sort((a,b)=>b[1]-a[1])[0];
 
-  // FTMO
-  const ftmoBalance  = BASE_BALANCE + ftmoPnL;
-  const ftmoProgress = Math.min(100, Math.max(0, ((ftmoBalance - BASE_BALANCE) / (FTMO_TARGET - BASE_BALANCE)) * 100));
-  const ftmoWins     = ftmoTrades.filter(t=>t.result==="WIN").length;
-  const ftmoWinRate  = ftmoTrades.length ? ((ftmoWins/ftmoTrades.length)*100).toFixed(1) : "0.0";
-  const motivMsg     = ftmoProgress < 20 ? "Just getting started" :
-                       ftmoProgress < 40 ? "Building momentum" :
-                       ftmoProgress < 60 ? "Getting close" :
-                       ftmoProgress < 80 ? "Almost there" : "🎯 Target in sight";
+  // Lucid Flex 50K
+  const lucidTrades  = trades.filter(t => t.date >= LUCID_START);
+  const lucidPnL     = lucidTrades.reduce((s,t)=>s+(parseFloat(t.pnl)||0),0);
+  const lucidBalance  = BASE_BALANCE + lucidPnL;
+  const lucidProgress = Math.min(100, Math.max(0, ((lucidBalance - BASE_BALANCE) / (LUCID_TARGET - BASE_BALANCE)) * 100));
+  const lucidWins     = lucidTrades.filter(t=>t.result==="WIN").length;
+  const lucidWinRate  = lucidTrades.length ? ((lucidWins/lucidTrades.length)*100).toFixed(1) : "0.0";
+  const motivMsg      = lucidProgress < 20 ? "Just getting started" :
+                        lucidProgress < 40 ? "Building momentum" :
+                        lucidProgress < 60 ? "Getting close" :
+                        lucidProgress < 80 ? "Almost there" : "Target in sight";
+  // Consistency rule: no single day > 50% of total profit
+  const lucidDailyPnL = lucidTrades.reduce((acc,t) => { acc[t.date]=(acc[t.date]||0)+(parseFloat(t.pnl)||0); return acc; }, {});
+  const lucidMaxDayProfit = lucidDailyPnL && Object.keys(lucidDailyPnL).length ? Math.max(0,...Object.values(lucidDailyPnL)) : 0;
+  const consistencyViolation = lucidPnL > 0 && lucidMaxDayProfit > lucidPnL * 0.5;
+  const consistencyPct = lucidPnL > 0 ? (lucidMaxDayProfit / lucidPnL * 100).toFixed(1) : "0.0";
 
   // Risk management
   const winPnLs    = allT.filter(t=>t.result==="WIN").map(t=>parseFloat(t.pnl)||0);
@@ -224,7 +231,7 @@ export default function Journal() {
     return { session:s, total:st.length, wins:sw, rate: st.length ? ((sw/st.length)*100).toFixed(0) : "0" };
   }).filter(s=>s.total>0);
 
-  const pairStats = ["EURUSD","XAUUSD","GBPUSD"].map(p => {
+  const pairStats = ["EURUSD","XAUUSD","GBPUSD","NAS100","MGC","MNQ"].map(p => {
     const pt = allT.filter(t=>t.pair===p);
     const pw = pt.filter(t=>t.result==="WIN").length;
     return { pair:p, total:pt.length, wins:pw, rate: pt.length ? ((pw/pt.length)*100).toFixed(0) : "0" };
@@ -317,49 +324,74 @@ export default function Journal() {
                 ))}
               </div>
 
-              {/* FTMO Tracker — prominent */}
+              {/* Lucid Flex 50K Tracker */}
               <Card style={{ border:`2px solid ${C.accent}44` }}>
-                <SectionTitle>FTMO CHALLENGE — £10,000 SWING</SectionTitle>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+                  <div>
+                    <SectionTitle>LUCID FLEX 50K — FUTURES EVAL</SectionTitle>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:-8 }}>MNQ · MGC · EOD Trailing Drawdown · No Daily Loss Limit</div>
+                  </div>
+                  <div style={{ fontSize:11, textAlign:"right", lineHeight:1.7 }}>
+                    <div>Target <span style={{ color:C.accent, fontWeight:700 }}>+$3,000</span></div>
+                    <div>Max Loss <span style={{ color:C.red, fontWeight:700 }}>-$2,000</span></div>
+                  </div>
+                </div>
+
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
                   <div>
                     <div style={{ fontSize:10, color:C.muted, marginBottom:4 }}>BALANCE</div>
-                    <div style={{ fontSize:26, fontWeight:800, color:ftmoBalance>=BASE_BALANCE?C.accent:C.red }}>£{ftmoBalance.toFixed(2)}</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:lucidBalance>=BASE_BALANCE?C.accent:C.red }}>${lucidBalance.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:10, color:C.muted, marginBottom:4 }}>NET P&L</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:lucidPnL>=0?C.accent:C.red }}>{fmtUSD(lucidPnL)}</div>
                   </div>
                   <div>
                     <div style={{ fontSize:10, color:C.muted, marginBottom:4 }}>TARGET</div>
-                    <div style={{ fontSize:26, fontWeight:800, color:C.accent }}>£{FTMO_TARGET.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize:10, color:C.muted, marginBottom:4 }}>FLOOR</div>
-                    <div style={{ fontSize:26, fontWeight:800, color:C.red }}>£{FTMO_FLOOR.toLocaleString()}</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:C.accent }}>${LUCID_TARGET.toLocaleString()}</div>
                   </div>
                   <div>
                     <div style={{ fontSize:10, color:C.muted, marginBottom:4 }}>BUFFER</div>
-                    <div style={{ fontSize:26, fontWeight:800, color:(ftmoBalance-FTMO_FLOOR)<300?C.red:C.orange }}>£{Math.max(0,ftmoBalance-FTMO_FLOOR).toFixed(2)}</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:(lucidBalance-LUCID_FLOOR)<500?C.red:C.orange }}>${Math.max(0,lucidBalance-LUCID_FLOOR).toFixed(2)}</div>
                   </div>
                 </div>
 
                 <div style={{ background:C.dim, borderRadius:6, height:12, overflow:"hidden", marginBottom:8 }}>
-                  <div style={{ width:`${ftmoProgress}%`, background:ftmoProgress>80?C.accent:ftmoProgress>40?C.orange:C.red, height:"100%", borderRadius:6, transition:"width 0.4s" }} />
+                  <div style={{ width:`${lucidProgress}%`, background:lucidProgress>80?C.accent:lucidProgress>40?C.orange:C.red, height:"100%", borderRadius:6, transition:"width 0.4s" }} />
                 </div>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-                  <span style={{ fontSize:12, color:C.muted }}>{ftmoProgress.toFixed(1)}% to profit target</span>
+                  <span style={{ fontSize:12, color:C.muted }}>{lucidProgress.toFixed(1)}% to profit target</span>
                   <span style={{ fontSize:13, fontWeight:700, color:C.accent }}>{motivMsg}</span>
                 </div>
 
-                {/* FTMO sub-stats */}
+                {/* Consistency rule */}
+                <div style={{ background:consistencyViolation?C.red+"22":C.dim, border:`1px solid ${consistencyViolation?C.red+"55":C.border}`, borderRadius:6, padding:"10px 14px", marginBottom:14 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:700, color:consistencyViolation?C.red:C.muted, letterSpacing:"0.06em" }}>CONSISTENCY RULE — 50%</div>
+                      <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>No single day can exceed 50% of total profit</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:20, fontWeight:800, color:consistencyViolation?C.red:lucidPnL>0?C.accent:C.muted }}>{consistencyPct}%</div>
+                      <div style={{ fontSize:10, color:C.muted }}>best day / total</div>
+                    </div>
+                  </div>
+                  {consistencyViolation && <div style={{ fontSize:11, color:C.red, marginTop:6, fontWeight:600 }}>⚠ VIOLATION — Best day exceeds 50% of total profit</div>}
+                </div>
+
+                {/* Sub-stats */}
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, paddingTop:14, borderTop:`1px solid ${C.border}` }}>
                   <div style={{ textAlign:"center" }}>
-                    <div style={{ fontSize:20, fontWeight:800, color:parseFloat(ftmoWinRate)>=55?C.accent:C.orange }}>{ftmoWinRate}%</div>
-                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>FTMO WIN RATE</div>
+                    <div style={{ fontSize:20, fontWeight:800, color:parseFloat(lucidWinRate)>=55?C.accent:C.orange }}>{lucidWinRate}%</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>WIN RATE</div>
                   </div>
                   <div style={{ textAlign:"center" }}>
-                    <div style={{ fontSize:20, fontWeight:800 }}>{ftmoTrades.length}</div>
-                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>FTMO TRADES</div>
+                    <div style={{ fontSize:20, fontWeight:800 }}>{lucidTrades.length}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>TRADES</div>
                   </div>
                   <div style={{ textAlign:"center" }}>
-                    <div style={{ fontSize:20, fontWeight:800, color:ftmoPnL>=0?C.accent:C.red }}>{fmt(ftmoPnL)}</div>
-                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>FTMO NET P&L</div>
+                    <div style={{ fontSize:20, fontWeight:800, color:(lucidBalance-LUCID_FLOOR)<500?C.red:C.orange }}>${Math.max(0,lucidBalance-LUCID_FLOOR).toFixed(2)}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3 }}>DD BUFFER LEFT</div>
                   </div>
                 </div>
               </Card>
@@ -488,7 +520,7 @@ export default function Journal() {
                     <label>{lbl}</label>
                     {type==="select"
                       ? <select value={form[key]} onChange={e=>uf(key,e.target.value)}>{opts.map(o=><option key={o}>{o}</option>)}</select>
-                      : <input type={type} step="any" value={form[key]} onChange={e=>uf(key,e.target.value)} />
+                      : <input type={type} step="any" value={form[key]} onChange={e=>uf(key,e.target.value)} onBlur={["entry","sl","tp"].includes(key)?refreshRR:undefined} />
                     }
                   </div>
                 ))}
@@ -533,7 +565,7 @@ export default function Journal() {
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               {/* Pair / result filter */}
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {["ALL","EURUSD","XAUUSD","GBPUSD","WIN","LOSS"].map(f=>(
+                {["ALL","EURUSD","XAUUSD","GBPUSD","NAS100","MGC","MNQ","WIN","LOSS"].map(f=>(
                   <button key={f} onClick={()=>setFilter(f)} style={{ background:filter===f?C.accent:C.dim, color:filter===f?"#000":C.muted, fontSize:11 }}>{f}</button>
                 ))}
               </div>
